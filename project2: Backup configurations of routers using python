@@ -1,0 +1,69 @@
+import paramiko
+import os
+from datetime import datetime
+
+def backup_router_config(hostname, username, password):
+# Connect to the router via SSH
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect(hostname, username=username, password=password)
+
+# Use SSH to execute commands
+ssh_transport = ssh.get_transport()
+session = ssh_transport.open_session()
+session.get_pty()
+session.exec_command('terminal length 0')
+session.exec_command('show running-config')
+
+# Read the output of the command
+output = session.recv(65535).decode('utf-8')
+
+# Close SSH connection
+ssh.close()
+
+return output
+
+def save_config_to_file(config, hostname):
+# Create a directory for storing backup configurations if it doesn't exist
+backup_dir = 'backup_configs'
+if not os.path.exists(backup_dir):
+os.makedirs(backup_dir)
+
+# Generate a filename based on the current date and router hostname
+timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+filename = f'{backup_dir}/{hostname}_{timestamp}.cfg'
+
+# Write the configuration to a file
+with open(filename, 'w') as f:
+f.write(config)
+
+print(f'Configuration saved to {filename}')
+
+# Main function
+def main():
+# Router credentials
+routers = [
+{'hostname': 'router1.example.com', 'username': 'admin', 'password': 'password1'},
+{'hostname': 'router2.example.com', 'username': 'admin', 'password': 'password2'}
+]
+
+# Backup configurations for each router
+for router in routers:
+config = backup_router_config(router['hostname'], router['username'], router['password'])
+save_config_to_file(config, router['hostname'])
+
+if __name__ == "__main__":
+main()
+
+
+
+
+The script uses the paramiko library to establish an SSH connection to the routers.
+The backup_router_config function sends the command show running-config to the router via SSH and retrieves the output.
+The save_config_to_file function saves the configuration output to a file, with the filename containing the router hostname and current timestamp.
+The main function defines the list of routers and their credentials, then iterates through each router to perform the backup.
+Finally, the script is executed when run as a standalone program using the if __name__ == "__main__": block.
+
+
+
+
